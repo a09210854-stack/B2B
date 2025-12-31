@@ -16,6 +16,12 @@ npm test
 npx jest path/to/your.test.ts
 ```
 
+- Run the example usage script (shows seeding + JWT example):
+
+```bash
+npm run example
+```
+
 ## What I added (helpful files)
 
 - `jest.config.js` — configured with `ts-jest`, setup file, and module mappings for shims.
