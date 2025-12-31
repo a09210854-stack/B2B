@@ -22,7 +22,9 @@ npx jest path/to/your.test.ts
 npm run example
 ```
 
-**Expected output (example):** `getCurrentUser returned: { id: 'u-example', role: 'seller' }`
+**Expected output (example):**
+`getCurrentUser returned: { id: 'u-example', role: 'seller' }`
+`Example user returned by requireRole: { id: 'u-example', role: 'seller' }`
 
 ## What I added (helpful files)
 
