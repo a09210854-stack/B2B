@@ -8,7 +8,8 @@
     "test": "test"
   },
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "migrate-tests": "node scripts/convert-getcurrentuser.js"
   },
   "repository": {
     "type": "git",

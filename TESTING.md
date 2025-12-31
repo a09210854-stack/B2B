@@ -58,3 +58,15 @@ beforeEach(() => {
 ---
 
 If you'd like, I can also add a short example test that seeds data using the new helpers. Would you like that? (yes/no)
+
+---
+
+Codemod: converting tests that spy on `getCurrentUser`
+
+To automatically convert tests that call `vi.spyOn(auth, 'getCurrentUser')` into the new seeding + JWT pattern, run:
+
+```bash
+npm run migrate-tests
+```
+
+The codemod is conservative and updates `test/**/*.test.ts` files; review changes and run `npm test` after conversion.
