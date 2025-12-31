@@ -70,3 +70,23 @@ npm run migrate-tests
 ```
 
 The codemod is conservative and updates `test/**/*.test.ts` files; review changes and run `npm test` after conversion.
+
+Example (before -> after):
+
+Before (spy on `getCurrentUser`):
+
+```ts
+const fakeUser = { id: 'u1', role: 'seller' } as any;
+vi.spyOn(auth, 'getCurrentUser').mockResolvedValue(fakeUser);
+const req = new Request('http://localhost');
+const u = await requireRole(req, ['seller']);
+```
+
+After (seed + JWT):
+
+```ts
+(global as any).__resetPrisma({ user: [{ id: 'u1', role: 'seller' }] });
+const token = auth.signJwt('u1');
+const req = new Request('http://localhost', { headers: { authorization: `Bearer ${token}` } });
+const u = await requireRole(req, ['seller']);
+```
