@@ -1,0 +1,36 @@
+name: Validate test migrations
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [ main ]
+
+jobs:
+  migrate-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run codemod (migrate tests)
+        run: npm run migrate-tests
+
+      - name: Check for uncommitted changes
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "ERROR: Codemod introduced changes. Please run 'npm run migrate-tests' locally and commit the results." >&2
+            git --no-pager status --porcelain
+            exit 1
+          fi
+
+      - name: Run tests
+        run: npm test
