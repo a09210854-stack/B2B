@@ -1,0 +1,219 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  buyer
+  seller
+  admin
+}
+
+enum Incoterm {
+  EXW
+  FOB
+  CIF
+  DAP
+  DDP
+}
+
+enum RFQStatus {
+  open
+  negotiating
+  closed
+}
+
+enum EscrowStatus {
+  initiated
+  funded
+  shipped
+  delivered
+  released
+  cancelled
+}
+
+enum PaymentProvider {
+  stripe
+  crypto
+}
+
+enum PaymentStatus {
+  pending
+  succeeded
+  failed
+  refunded
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  role          Role
+  country       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  companies     Company[]
+  products      Product[]   @relation("UserProducts")
+  messagesSent  Message[]   @relation("SenderMessages")
+  ordersBuyer   Order[]     @relation("BuyerOrders")
+  ordersSeller  Order[]     @relation("SellerOrders")
+}
+
+model Company {
+  id                 String   @id @default(cuid())
+  userId             String
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name               String
+  regNumber          String?
+  country            String
+  city               String?
+  website            String?
+  docsUrl            String?
+  verificationStatus String
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  sentRelations      TradeNetworkRelation[] @relation("FromCompany")
+  recvRelations      TradeNetworkRelation[] @relation("ToCompany")
+}
+
+model Product {
+  id              String   @id @default(cuid())
+  sellerId        String?
+  sellerUser      User?    @relation("UserProducts", fields: [sellerId], references: [id])
+  companyId       String?
+  company         Company? @relation(fields: [companyId], references: [id])
+  title           String
+  description     String
+  images          Json?
+  hsCode          String?
+  moq             Int?
+  priceUsd        Float
+  currencyDisplay String
+  incoterm        Incoterm
+  leadTimeDays    Int?
+  category        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  inventory       FinishedGoodsInventory?
+  rfqs            RFQ[]
+  @@index([hsCode])
+  @@index([sellerId])
+  @@index([category])
+}
+
+model FinishedGoodsInventory {
+  id                String   @id @default(cuid())
+  productId         String   @unique
+  product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantityAvailable Float
+  unit              String
+  warehouseLocation String?
+  readyForExport    Boolean  @default(true)
+  lastUpdated       DateTime @updatedAt
+}
+
+model RFQ {
+  id              String     @id @default(cuid())
+  buyerId         String
+  buyer           User       @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  productId       String
+  product         Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  qty             Float
+  targetIncoterm   Incoterm
+  targetPriceUsd  Float?
+  notes           String?
+  status          RFQStatus  @default(open)
+  createdAt       DateTime   @default(now())
+
+  thread          RFQThread?
+  orders          Order[]
+  @@index([buyerId])
+  @@index([productId])
+}
+
+model RFQThread {
+  id        String    @id @default(cuid())
+  rfqId     String    @unique
+  rfq       RFQ       @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  messages  Message[]
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  threadId  String
+  thread    RFQThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User     @relation("SenderMessages", fields: [senderId], references: [id])
+  body      String
+  createdAt DateTime @default(now())
+  @@index([threadId])
+  @@index([senderId])
+}
+
+model Order {
+  id               String        @id @default(cuid())
+  rfqId            String?
+  rfq              RFQ?          @relation(fields: [rfqId], references: [id])
+  buyerId          String
+  buyer            User          @relation("BuyerOrders", fields: [buyerId], references: [id])
+  sellerId         String
+  seller           User          @relation("SellerOrders", fields: [sellerId], references: [id])
+  agreedPriceUsd   Float
+  qty              Float
+  totalAmountUsd   Float
+  paymentMethod    PaymentProvider
+  escrowStatus     EscrowStatus  @default(initiated)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  payments         Payment[]
+  documents        Document[]
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([escrowStatus])
+}
+
+model Payment {
+  id             String         @id @default(cuid())
+  orderId        String
+  order          Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  provider       PaymentProvider
+  sessionId      String?
+  amountUsd      Float
+  currency       String
+  status         PaymentStatus  @default(pending)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  @@index([orderId])
+  @@index([provider, status])
+}
+
+model Document {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  type      String
+  url       String
+  createdAt DateTime @default(now())
+  @@index([orderId])
+}
+
+model TradeNetworkRelation {
+  id             String   @id @default(cuid())
+  fromCompanyId  String
+  toCompanyId    String
+  relationType   String
+  trustScore     Int?
+  createdAt      DateTime @default(now())
+
+  fromCompany    Company  @relation("FromCompany", fields: [fromCompanyId], references: [id])
+  toCompany      Company  @relation("ToCompany", fields: [toCompanyId], references: [id])
+  @@index([fromCompanyId])
+  @@index([toCompanyId])
+}
