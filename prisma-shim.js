@@ -2,7 +2,9 @@ class PrismaClient {
   constructor() {
     // simple in-memory store for models
     this._data = {
-      user: []
+      user: [],
+      order: [],
+      payment: []
     };
 
     this.user = {
@@ -29,11 +31,48 @@ class PrismaClient {
         return this._data.user[0] || null;
       }
     };
+
+    // order model mock
+    this.order = {
+      create: async ({ data }) => {
+        const record = { id: data.id || `ord_${Math.random().toString(36).slice(2,8)}`, ...data };
+        this._data.order.push(record);
+        return record;
+      },
+      findUnique: async ({ where }) => {
+        return this._data.order.find(o => o.id === where.id) || null;
+      },
+      findMany: async (query = {}) => {
+        // simple filter by where.userId
+        if (query.where && query.where.userId) {
+          return this._data.order.filter(o => o.userId === query.where.userId);
+        }
+        return this._data.order.slice();
+      }
+    };
+
+    // payment model mock
+    this.payment = {
+      create: async ({ data }) => {
+        const record = { id: data.id || `pay_${Math.random().toString(36).slice(2,8)}`, ...data };
+        this._data.payment.push(record);
+        return record;
+      },
+      findUnique: async ({ where }) => {
+        return this._data.payment.find(p => p.id === where.id) || null;
+      },
+      findMany: async (query = {}) => {
+        if (query.where && query.where.orderId) {
+          return this._data.payment.filter(p => p.orderId === query.where.orderId);
+        }
+        return this._data.payment.slice();
+      }
+    };
   }
 
   // test helpers
   __reset(data = {}) {
-    this._data = Object.assign({ user: [] }, data);
+    this._data = Object.assign({ user: [], order: [], payment: [] }, data);
   }
 
   $connect() { return Promise.resolve(); }

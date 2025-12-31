@@ -20,9 +20,9 @@ npx jest path/to/your.test.ts
 
 - `jest.config.js` — configured with `ts-jest`, setup file, and module mappings for shims.
 - `jest.setup.js` — initializes `global.prisma` for tests and provides `global.__resetPrisma(data)` to seed/reset in-memory data.
-- `prisma-shim.js` — in-memory mock of `@prisma/client` (supports `user.findUnique`, `create`, `update`, `delete`, `findFirst`, and `__reset`).
+- `prisma-shim.js` — in-memory mock of `@prisma/client` (supports `user.findUnique`, `create`, `update`, `delete`, `findFirst`, and `__reset`) and additional `order` and `payment` model helpers (simple `create`, `findUnique`, `findMany`).
 - `vitest-shim.js` — maps `vitest` imports to Jest equivalents and exposes `vi.setMockUserData` helper.
-- `prisma-client.d.ts`, `vitest.d.ts` — TypeScript declaration stubs for the shims.
+- `prisma-client.d.ts`, `vitest.d.ts` — TypeScript declaration stubs for the shims (now include `Order` and `Payment`).
 
 ## Using the mocks in tests 💡
 
