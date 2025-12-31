@@ -22,6 +22,8 @@ npx jest path/to/your.test.ts
 npm run example
 ```
 
+**Expected output (example):** `getCurrentUser returned: { id: 'u-example', role: 'seller' }`
+
 ## What I added (helpful files)
 
 - `jest.config.js` — configured with `ts-jest`, setup file, and module mappings for shims.
