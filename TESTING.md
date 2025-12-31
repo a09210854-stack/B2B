@@ -71,7 +71,9 @@ npm run migrate-tests
 
 The codemod is conservative and updates `test/**/*.test.ts` files; review changes and run `npm test` after conversion.
 
-**CI check:** A GitHub Actions check runs `npm run migrate-tests` on every PR — if the codemod makes changes, the check fails and the PR must include the converted tests before merging.
+**CI check:** A GitHub Actions check runs `npm run migrate-tests` on every PR — if the codemod makes changes, the check will attempt to automatically commit the fixes back to your branch for PRs originating from this repository. If the PR is from a fork (where CI cannot push back), the check will fail and you must run `npm run migrate-tests` locally and commit the changes.
+
+If the workflow auto-applies fixes, it will also post a short comment on the PR to notify you of the changes.
 
 Example (before -> after):
 

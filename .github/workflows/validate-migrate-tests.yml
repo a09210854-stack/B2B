@@ -24,12 +24,47 @@ jobs:
       - name: Run codemod (migrate tests)
         run: npm run migrate-tests
 
-      - name: Check for uncommitted changes
+      - name: Auto-fix and push codemod changes (if allowed)
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
         run: |
           if [ -n "$(git status --porcelain)" ]; then
-            echo "ERROR: Codemod introduced changes. Please run 'npm run migrate-tests' locally and commit the results." >&2
+            echo "Codemod introduced changes. Committing and pushing them back to the PR branch..."
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "chore(tests): apply codemod to update getCurrentUser spies"
+            git push origin HEAD:${{ github.event.pull_request.head.ref }}
+            # post a comment on the PR mentioning the auto-fix
+            curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/json" \
+              -d "{\"body\":\"Automated codemod applied and committed by CI. Please review the changes.\"}" \
+              "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments"
+          else
+            echo "No codemod changes detected."
+          fi
+
+      - name: Fail if codemod changed files and PR is from a fork
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "ERROR: Codemod introduced changes but PR is from a fork; cannot push from CI. Please run 'npm run migrate-tests' locally and commit the results." >&2
             git --no-pager status --porcelain
             exit 1
+          fi
+
+      - name: Auto-fix and push on push events
+        if: ${{ github.event_name == 'push' }}
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Codemod introduced changes on push. Committing and pushing them back to the branch..."
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "chore(tests): apply codemod to update getCurrentUser spies"
+            # determine branch from GITHUB_REF
+            BRANCH="${GITHUB_REF#refs/heads/}"
+            git push origin HEAD:$BRANCH
+          else
+            echo "No codemod changes detected."
           fi
 
       - name: Run tests
