@@ -5,29 +5,34 @@ import { HttpError } from '../lib/httpError';
 
 beforeEach(() => {
   vi.restoreAllMocks();
+  // reset the in-memory prisma mock before each test
+  (global as any).__resetPrisma({ user: [] });
 });
 
 describe('rbac helpers', () => {
   it('throws Unauthorized when no user', async () => {
-    vi.spyOn(auth, 'getCurrentUser').mockResolvedValue(null as any);
+    // no Authorization header -> unauthorized
     const req = new Request('http://localhost');
     await expect(requireAuth(req)).rejects.toBeInstanceOf(HttpError);
     await expect(requireAuth(req)).rejects.toMatchObject({ status: 401 });
   });
 
   it('throws Forbidden when role mismatch', async () => {
-    const fakeUser = { id: 'u1', role: 'buyer' } as any;
-    vi.spyOn(auth, 'getCurrentUser').mockResolvedValue(fakeUser);
-    const req = new Request('http://localhost');
+    // seed a buyer user
+    (global as any).__resetPrisma({ user: [{ id: 'u1', role: 'buyer' }] });
+    const token = auth.signJwt('u1');
+    const req = new Request('http://localhost', { headers: { authorization: `Bearer ${token}` } });
     await expect(requireRole(req, ['seller'])).rejects.toBeInstanceOf(HttpError);
     await expect(requireRole(req, ['seller'])).rejects.toMatchObject({ status: 403 });
   });
 
   it('returns user when role matches', async () => {
-    const fakeUser = { id: 'u1', role: 'seller' } as any;
-    vi.spyOn(auth, 'getCurrentUser').mockResolvedValue(fakeUser);
-    const req = new Request('http://localhost');
+    // seed a seller user
+    (global as any).__resetPrisma({ user: [{ id: 'u1', role: 'seller' }] });
+    const token = auth.signJwt('u1');
+    const req = new Request('http://localhost', { headers: { authorization: `Bearer ${token}` } });
     const u = await requireRole(req, ['seller']);
-    expect(u).toBe(fakeUser);
+    expect(u?.id).toBe('u1');
+    expect(u?.role).toBe('seller');
   });
 });
