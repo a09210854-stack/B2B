@@ -53,6 +53,14 @@ npm ci
 npm test
 ```
 
+- Run the preview server:
+
+```bash
+npm run dev
+```
+
+  Then open `http://localhost:3000` to see `B2B Project Preview is running!`.
+
 4. If you modify tests, run the codemod to migrate old `getCurrentUser` spy patterns:
 
 ```bash
