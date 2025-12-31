@@ -46,8 +46,10 @@ jobs:
         if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
         run: |
           if [ -n "$(git status --porcelain)" ]; then
-            echo "ERROR: Codemod introduced changes but PR is from a fork; cannot push from CI. Please run 'npm run migrate-tests' locally and commit the results." >&2
+            echo "ERROR: Codemod introduced changes but PR is from a fork; cannot push from CI. Posting a comment with instructions to the PR and failing the check." >&2
             git --no-pager status --porcelain
+            BODY=$(jq -Rs . < .github/pull_request_template/codemod-fixup.md)
+            curl -s -X POST -H "Authorization: token $GITHUB_TOKEN" -H "Content-Type: application/json" -d "{\"body\": $BODY}" "https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments"
             exit 1
           fi
 
